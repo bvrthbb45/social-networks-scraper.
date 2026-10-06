@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { get } from "../api/client";
+import { downloadFile } from "../lib/download";
 import type { FindingRow, FindingStatus } from "../api/types";
 import { Badge, Empty, ErrorBox, Spinner } from "../components/ui";
 import { he } from "../i18n/he";
@@ -26,13 +27,25 @@ export function Findings() {
     return get<FindingRow[]>(`/findings?${q}`);
   }, [status, severity, kind, platform, order, page]);
 
+  const [exportError, setExportError] = useState<string | null>(null);
+  async function exportReport() {
+    setExportError(null);
+    try { await downloadFile("/reports/export/findings?states=confirmed,escalated&days=30", "findings-report.xlsx"); }
+    catch { setExportError(he.findings.exportFailed); }
+  }
+
   const reset = (fn: () => void) => { fn(); setPage(0); };
   const rows = loading ? [] : (data ?? []).slice(0, PAGE); // never show another filter's rows
   const hasMore = !loading && (data?.length ?? 0) > PAGE;
 
   return (
     <div className="stack">
-      <div className="page-head"><h1>{he.findings.title}</h1></div>
+      <div className="page-head">
+        <h1>{he.findings.title}</h1>
+        <button className="btn" onClick={() => void exportReport()}>{he.findings.exportConfirmed}</button>
+      </div>
+      <p className="muted small">{he.findings.exportNote}</p>
+      {exportError && <ErrorBox message={exportError} />}
       <div className="tabs" role="tablist" aria-label={he.findings.statusTab}>
         {STATUSES.map((s) => (
           <button key={s} role="tab" aria-selected={status === s} onClick={() => reset(() => setStatus(s))}>{he.status[s]}</button>

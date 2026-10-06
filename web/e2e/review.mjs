@@ -1,6 +1,7 @@
 // End-to-end: invite -> password -> 2FA -> roles -> import -> findings -> evidence -> decision -> audit.
 import { execFileSync } from "node:child_process";
 import { chromium } from "playwright-core";
+import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 
 const BASE = "http://localhost:4173";
@@ -38,7 +39,7 @@ async function enrol(page, token, label) {
 const admin = await (await browser.newContext({ locale: "he-IL" })).newPage();
 await enrol(admin, process.env.ADMIN_INVITE, "admin");
 await admin.getByRole("heading", { name: "לוח בקרה" }).waitFor();
-expect((await admin.getByRole("navigation").first().locator("a").count()) === 9, "admin sees all 9 sections");
+expect((await admin.getByRole("navigation").first().locator("a").count()) === 10, "admin sees all 10 sections");
 expect((await admin.locator("html").getAttribute("dir")) === "rtl", "document is right-to-left");
 
 async function createUser(email, roleLabel) {
@@ -123,6 +124,15 @@ expect(after === rows - 1, `dismissed finding left the queue (${rows} -> ${after
 await reviewer.getByRole("tab", { name: "נדחה" }).click();
 await reviewer.locator("tbody tr").first().waitFor();
 ok("it appears under the dismissed tab");
+// export (audited, watermarked, an actual xlsx file)
+await reviewer.getByRole("tab", { name: "חדש" }).click();
+const [download] = await Promise.all([
+  reviewer.waitForEvent("download"),
+  reviewer.getByRole("button", { name: "ייצוא התראות שאושרו והועברו (30 יום)" }).click(),
+]);
+expect(download.suggestedFilename() === "findings-report.xlsx", "export downloads findings-report.xlsx");
+const bytes = await readFile(await download.path());
+expect(bytes.subarray(0, 2).toString() === "PK", "the downloaded file is a real xlsx (zip) container");
 await reviewer.goto(`${BASE}/audit`);
 await reviewer.getByRole("heading", { name: "לוח בקרה" }).waitFor();
 ok("reviewer cannot open the audit page");
@@ -131,10 +141,18 @@ ok("reviewer cannot open the audit page");
 await admin.getByRole("link", { name: "יומן ביקורת" }).first().click();
 await admin.getByText("finding.decided").first().waitFor();
 const text = await admin.locator("main").textContent();
-for (const a of ["evidence.viewed", "finding.viewed", "finding.decided", "user.created", "import.committed"])
+for (const a of ["evidence.viewed", "finding.viewed", "finding.decided", "user.created", "import.committed", "report.exported"])
   expect(text.includes(a), `audit trail contains ${a}`);
 for (const secret of ["הערה סודית", "חייל בדוי", "7000001", "e2e_user", "נשר שחור"])
   expect(!text.includes(secret), `audit trail does not contain "${secret}"`);
+
+// --- reports page (admin) ----------------------------------------------------------------------
+await admin.getByRole("link", { name: "דוחות" }).first().click();
+await admin.getByRole("heading", { name: "דוחות", exact: true }).waitFor();
+await admin.getByText("שמירת נתונים").waitFor();
+expect(await admin.getByText("מספרים מצטברים בלבד", { exact: false }).isVisible(), "reports state that they hold aggregates only");
+const reportText = await admin.locator("main").textContent();
+for (const secret of ["חייל בדוי", "7000001", "e2e_user"]) expect(!reportText.includes(secret), `report holds no "${secret}"`);
 
 // --- tokens never in web storage --------------------------------------------------------------
 const stored = await reviewer.evaluate(() => JSON.stringify({ l: { ...localStorage }, s: { ...sessionStorage } }));

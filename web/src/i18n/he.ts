@@ -5,7 +5,7 @@ export const he = {
   app: { name: "מוניטור אבטחת מידע", tagline: "מחלקת ביטחון מידע" },
   nav: {
     dashboard: "לוח בקרה", findings: "התראות", people: "חיילים וחשבונות", imports: "ייבוא קבצים",
-    watchlist: "רשימת מעקב", learning: "למידה", users: "משתמשים", audit: "יומן ביקורת", account: "החשבון שלי",
+    watchlist: "רשימת מעקב", learning: "למידה", users: "משתמשים", reports: "דוחות", audit: "יומן ביקורת", account: "החשבון שלי",
     logout: "יציאה", main: "ניווט ראשי",
   },
   common: {
@@ -55,6 +55,8 @@ export const he = {
     lowConfidence: "אינדיקציה חלשה – נדרשת בדיקה אנושית בלבד.", back: "חזרה לרשימה", next: "להתראה הבאה",
     humanOnly: "ההחלטה היא שלכם. המערכת רק מציעה.",
     order: "מיון", orderPriority: "הכי חשוד קודם", orderUncertain: "הכי לא ברור קודם (עוזר למערכת ללמוד)", orderNewest: "החדש ביותר",
+    exportTitle: "ייצוא התראות", exportConfirmed: "ייצוא התראות שאושרו והועברו (30 יום)", exportFailed: "הייצוא נכשל.",
+    exportNote: "הקובץ מכיל מידע רגיש ומסומן בשם המפיק. ההפקה נרשמת ביומן הביקורת.",
     lowLane: "עדיפות נמוכה", adjusted: "ציון לפי למידה", learningTitle: "למה הציון כזה", learningNote: "הציון המקורי של המנוע לא משתנה. הלמידה רק משפיעה על סדר התצוגה, ואיש לא נדחה אוטומטית.",
   },
   dismissReason: { not_relevant: "לא רלוונטי", common_word: "מילה רגילה, לא שם קוד", public_info: "מידע פומבי ידוע", other: "אחר" },
@@ -96,6 +98,21 @@ export const he = {
     resetTitle: "קישור איפוס", reset: "איפוס פרטי כניסה", resetWarn: "הסיסמה והאימות הדו-שלבי יימחקו, וכל המכשירים יתנתקו. המשתמש יקבל קישור חדש.",
     deactivate: "השבתה", activate: "הפעלה", twoFactor: "אימות דו-שלבי", twoFactorOn: "פעיל", twoFactorOff: "לא הוגדר",
     conflict: "הפעולה לא אפשרית: אי אפשר להוריד או להשבית את עצמכם או את המנהל האחרון.", exists: "משתמש עם האימייל הזה כבר קיים.",
+  },
+  reports: {
+    title: "דוחות", period: "תקופה", days: (n: string) => `${n} ימים`, intro: "מספרים מצטברים בלבד: בלי שמות, חשבונות או טקסט של פוסטים.",
+    created: "התראות שנוצרו", backlog: "ממתינות להחלטה", median: "זמן חציוני להחלטה", hours: (n: string) => `${n} שעות`, oldest: "ההתראה הפתוחה הוותיקה ביותר",
+    decisions: "החלטות בתקופה", dismissReasons: "סיבות דחייה", falseAlarms: "התראות שווא לפי סוג", decided: "הוחלט", dismissed: "נדחו", rate: "שיעור דחייה",
+    accountStatus: { open: "פתוח", closed: "סגור", unknown: "לא ידוע", not_found: "לא נמצא" } as Record<string, string>,
+    byKind: "נוצרו לפי סוג", bySeverity: "נוצרו לפי חומרה", accounts: "חשבונות לפי מצב", imports: "ייבוא קבצים", files: "קבצים", rows: "שורות", rejectedRows: "שורות שנדחו",
+    security: "אירועי אבטחה במערכת", none: "אין", learningModel: "מודל למידה פעיל", modelAge: (v: string, d: string) => `גרסה ${v}, בן ${d} ימים`, noModel: "אין מודל פעיל",
+    events: {
+      "login.failed": "כניסות שנכשלו", "login.blocked_locked": "ניסיונות כניסה לחשבון נעול", "account.locked": "חשבונות שננעלו", "2fa.failed": "אימות דו-שלבי שנכשל",
+      "refresh.reuse_detected": "חשד לגניבת סשן", "device.revoked": "מכשירים שנותקו", "user.credentials_reset": "איפוס פרטי כניסה", "import.rejected": "קבצים שנדחו בייבוא", "posts.refused": "קליטת תוכן שנדחתה",
+    } as Record<string, string>,
+    retention: "שמירת נתונים", retentionDays: "תקופת שמירה", postsTotal: "פוסטים במערכת", overdue: "פוסטים שעבר זמנם (יימחקו בהרצה הקרובה)", dueSoon: "יימחקו תוך 7 ימים",
+    oldestPost: "גיל הפוסט הוותיק ביותר", lastRun: "הרצה יומית אחרונה", neverRun: "טרם רצה", purgedPosts: "פוסטים שנמחקו", consents: "הסכמות שפוקעות", consentsHint: "ההסכמות שיפוגו בקרוב או שפגו ועוד לא טופלו. עם הפקיעה הניטור מופסק והחשבונות נמחקים.",
+    soldier: "חייל", ref: "אסמכתא", until: "תוקף עד", daysLeft: "ימים שנותרו", noConsents: "אין הסכמות שפוקעות בתקופה הזו.", expired: "פגה",
   },
   learning: {
     title: "למידה ושיפור הזיהוי",

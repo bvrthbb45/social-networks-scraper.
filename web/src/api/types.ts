@@ -57,3 +57,17 @@ export interface TermStat {
 }
 export interface TermSuggestion { token: string; confirmed_posts: number; accounts: number; dismissed_posts: number }
 export interface GoldenCase { id: string; text: string; kind: string }
+
+export interface ReportSummary {
+  days: number; findings_created: number; created_by_kind: Record<string, number>; created_by_severity: Record<string, number>;
+  decisions: Record<string, number>; dismissal_reasons: Record<string, number>;
+  false_alarm_by_kind: Record<string, { decided: number; dismissed: number; rate: number }>;
+  median_hours_to_decision: number | null; backlog: number; oldest_open_hours: number | null;
+  accounts_by_status: Record<string, number>; imports: { files: number; rows: number; rejected_rows: number };
+  security_events: Record<string, number>; learning: { version: number; age_days: number } | null;
+}
+export interface RetentionStatus {
+  retention_days: number; posts_total: number; overdue: number; due_within_7_days: number; oldest_post_days: number | null;
+  last_run: { at: string; counts: Record<string, number> } | null;
+}
+export interface ExpiringConsent { consent_id: string; soldier: string; ref: string; valid_until: string; days_left: number; accounts: number }
