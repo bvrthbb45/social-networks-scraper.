@@ -113,6 +113,7 @@ def analyze_post(
     if eligible(account, consent, post) is not None:
         return 0
     new = 0
+    created: list[Finding] = []
     for h in _hits_for(post, terms, clf):
         ev_hash = hashlib.sha256(f"{h.source}|{h.key}".encode()).hexdigest()
         if db.scalar(
@@ -124,30 +125,37 @@ def analyze_post(
         ):
             continue
         fid = uuid.uuid4()
-        db.add(
-            Finding(
-                id=fid,
-                post_id=post.id,
-                kind=h.kind,
-                score=Decimal(str(h.score)),
-                severity=h.severity,
-                reason_enc=crypto.encrypt_text(h.reason, f"findings.reason:{fid}"),
-                evidence_enc=crypto.encrypt_json(
-                    {
-                        "source": h.source,
-                        "snippet": h.snippet,
-                        "term_id": h.term_id,
-                        "key": h.key,
-                    },
-                    f"findings.evidence:{fid}",
-                ),
-                evidence_hash=ev_hash,
-                engine_version=ENGINE_VERSION,
-            )
+        finding = Finding(
+            id=fid,
+            post_id=post.id,
+            kind=h.kind,
+            score=Decimal(str(h.score)),
+            severity=h.severity,
+            reason_enc=crypto.encrypt_text(h.reason, f"findings.reason:{fid}"),
+            evidence_enc=crypto.encrypt_json(
+                {
+                    "source": h.source,
+                    "snippet": h.snippet,
+                    "term_id": h.term_id,
+                    "key": h.key,
+                    "features": h.features,
+                },
+                f"findings.evidence:{fid}",
+            ),
+            evidence_hash=ev_hash,
+            engine_version=ENGINE_VERSION,
         )
+        db.add(finding)
+        created.append(finding)
         new += 1
     post.analyzed_version = ENGINE_VERSION
     db.flush()
+    if created:
+        from ..learning import (
+            service as learning,
+        )  # late import: learning reads findings too
+
+        learning.score_findings(db, created)
     return new
 
 

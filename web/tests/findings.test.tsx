@@ -8,12 +8,12 @@ import { latinWords, mockApi, status } from "./mockApi";
 afterEach(() => setAccessToken(null));
 
 const row = (o = {}) => ({
-  id: "f1", kind: "codename", severity: "high", score: 0.9, status: "new", reason: "הטקסט מכיל שם קוד מרשימת המעקב",
+  id: "f1", kind: "codename", severity: "high", score: 0.9, adjusted_score: null, lane: "normal", status: "new", reason: "הטקסט מכיל שם קוד מרשימת המעקב",
   source: "text", snippet: "הגענו אל נשר שחור", platform: "instagram", username: "soldier_x", post_url: null, posted_at: null,
   created_at: "2026-10-06T10:00:00Z", ...o,
 });
 const detail = (o = {}) => ({
-  ...row(), engine_version: "rules-1", post_text: "הגענו אל נשר שחור היום", media: [{ index: 0, kind: "image" }], history: [], ...o,
+  ...row(), learning: [], engine_version: "rules-1", post_text: "הגענו אל נשר שחור היום", media: [{ index: 0, kind: "image" }], history: [], ...o,
 });
 
 describe("findings queue", () => {

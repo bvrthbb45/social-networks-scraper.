@@ -16,6 +16,7 @@ from .. import audit, media
 from ..analysis import image as img_engine
 from ..database import get_db
 from ..deps import require_roles, uuid_or_404
+from ..learning import service as learning
 from ..models import Account, Finding, Import, Post, Review, User
 from ..security import crypto
 
@@ -83,6 +84,12 @@ def finding_detail(
         "kind": f.kind,
         "severity": f.severity,
         "score": float(f.score),
+        "adjusted_score": (
+            float(f.adjusted_score) if f.adjusted_score is not None else None
+        ),
+        "learning": learning.explain(
+            db, f
+        ),  # plain-Hebrew reasons behind the learned score
         "status": f.status,
         "reason": crypto.decrypt_text(f.reason_enc, f"findings.reason:{f.id}"),
         "source": ev.get("source"),

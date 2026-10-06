@@ -37,6 +37,7 @@ class Hit:
     snippet: str = ""
     term_id: str | None = None
     key: str = ""  # stable identity of the match (idempotency)
+    features: dict | None = None  # numeric descriptors for learned scoring (images)
 
 
 def norm(text: str) -> str:

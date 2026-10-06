@@ -16,10 +16,16 @@ def end_consent(
     """
     from datetime import datetime, timezone
 
-    n = len(
-        db.scalars(select(Account.id).where(Account.consent_id == consent.id)).all()
-    )
+    ids = db.scalars(select(Account.id).where(Account.consent_id == consent.id)).all()
+    n = len(ids)
+    from .learning import service as learning
+
+    learned_from = learning.reviewed_findings_of(
+        db, ids
+    )  # labels that models may have used
     db.execute(delete(Account).where(Account.consent_id == consent.id))
+    if learned_from:
+        learning.invalidate_for_erasure(db)
     consent.status = new_status
     consent.revoked_at = datetime.now(timezone.utc)
     audit.record(

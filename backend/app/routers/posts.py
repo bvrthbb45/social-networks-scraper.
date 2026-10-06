@@ -3,7 +3,7 @@ from typing import Literal
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from pydantic import BaseModel, ConfigDict, Field
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from .. import audit
@@ -92,6 +92,28 @@ def import_posts(
     }
 
 
+_EFFECTIVE = func.coalesce(Finding.adjusted_score, Finding.score)
+_ORDERINGS = {
+    # default: most suspicious first (the learned score when a model is active, the engine score otherwise)
+    "priority": (_EFFECTIVE.desc(), Finding.created_at.desc()),
+    # active learning: the ones the system is least sure about, worth a reviewer's attention
+    "uncertain": (func.abs(_EFFECTIVE - 0.5).asc(), Finding.created_at.desc()),
+    "newest": (Finding.created_at.desc(),),
+}
+
+
+def _lane(f: Finding) -> str:
+    """ "low" only when a learned model is active AND ranks the finding below the low-priority line.
+    It is still listed and still needs a human; it just sits lower in the queue."""
+    from ..learning.calibrator import LOW_LANE
+
+    return (
+        "low"
+        if f.adjusted_score is not None and float(f.adjusted_score) < LOW_LANE
+        else "normal"
+    )
+
+
 @router.get("/findings")
 def list_findings(
     status_: str = "new",
@@ -100,6 +122,7 @@ def list_findings(
     platform: str | None = None,
     limit: int = 50,
     offset: int = 0,
+    order: str = "priority",
     user: User = Depends(require_roles("reviewer", "admin")),
     db: Session = Depends(get_db),
 ) -> list[dict]:
@@ -108,7 +131,7 @@ def list_findings(
         .join(Post, Post.id == Finding.post_id)
         .join(Account, Account.id == Post.account_id)
         .where(Finding.status == status_)
-        .order_by(Finding.score.desc(), Finding.created_at.desc())
+        .order_by(*_ORDERINGS.get(order, _ORDERINGS["priority"]))
         .limit(max(1, min(limit, 200)))
         .offset(max(0, offset))
     )
@@ -131,6 +154,10 @@ def list_findings(
                 "kind": f.kind,
                 "severity": f.severity,
                 "score": float(f.score),
+                "adjusted_score": (
+                    float(f.adjusted_score) if f.adjusted_score is not None else None
+                ),
+                "lane": _lane(f),
                 "status": f.status,
                 "reason": crypto.decrypt_text(f.reason_enc, f"findings.reason:{f.id}"),
                 "source": ev.get("source"),

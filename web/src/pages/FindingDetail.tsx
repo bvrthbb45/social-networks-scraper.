@@ -26,9 +26,17 @@ export function FindingDetailPage() {
             <Badge>{he.kind[data.kind as keyof typeof he.kind] ?? data.kind}</Badge>
             <Badge kind="info">{he.status[data.status]}</Badge>
             <bdi className="muted">{he.findings.score}: {formatPercent(data.score)}</bdi>
+            {data.adjusted_score != null && <bdi className="muted">· {he.findings.adjusted}: {formatPercent(data.adjusted_score)}</bdi>}
           </div>
           <div><h3>{he.findings.reason}</h3><p>{data.reason}</p></div>
           {data.score <= 0.6 && data.kind === "uniform" && <p className="small muted">{he.findings.lowConfidence}</p>}
+          {(data.learning?.length ?? 0) > 0 && (
+            <div className="stack" style={{ gap: "var(--gap-2)" }}>
+              <h3>{he.findings.learningTitle}</h3>
+              <ul className="small">{data.learning!.map((r) => <li key={r}>{r}</li>)}</ul>
+              <p className="small muted">{he.findings.learningNote}</p>
+            </div>
+          )}
           {data.snippet && <div><h3>{he.findings.evidence}</h3><p className="secret" dir="auto">{data.snippet}</p></div>}
           <p className="small muted">
             {he.findings.source}: {he.source[(data.source ?? "text") as keyof typeof he.source] ?? data.source}

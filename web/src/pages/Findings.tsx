@@ -16,14 +16,15 @@ export function Findings() {
   const [severity, setSeverity] = useState("");
   const [kind, setKind] = useState("");
   const [platform, setPlatform] = useState("");
+  const [order, setOrder] = useState("priority");
   const [page, setPage] = useState(0);
   const { data, error, loading, reload } = useAsync(() => {
-    const q = new URLSearchParams({ status_: status, limit: String(PAGE + 1), offset: String(page * PAGE) });
+    const q = new URLSearchParams({ status_: status, limit: String(PAGE + 1), offset: String(page * PAGE), order });
     if (severity) q.set("severity", severity);
     if (kind) q.set("kind", kind);
     if (platform) q.set("platform", platform);
     return get<FindingRow[]>(`/findings?${q}`);
-  }, [status, severity, kind, platform, page]);
+  }, [status, severity, kind, platform, order, page]);
 
   const reset = (fn: () => void) => { fn(); setPage(0); };
   const rows = loading ? [] : (data ?? []).slice(0, PAGE); // never show another filter's rows
@@ -49,6 +50,12 @@ export function Findings() {
               <option value="">{he.common.all}</option>
               {Object.entries(he.kind).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
             </select></label>
+          <label className="field"><span>{he.findings.order}</span>
+            <select className="input" value={order} onChange={(e) => reset(() => setOrder(e.target.value))}>
+              <option value="priority">{he.findings.orderPriority}</option>
+              <option value="uncertain">{he.findings.orderUncertain}</option>
+              <option value="newest">{he.findings.orderNewest}</option>
+            </select></label>
           <label className="field"><span>{he.findings.platform}</span>
             <select className="input" value={platform} onChange={(e) => reset(() => setPlatform(e.target.value))}>
               <option value="">{he.common.all}</option>
@@ -69,14 +76,17 @@ export function Findings() {
             <tbody>
               {rows.map((f) => (
                 <tr key={f.id}>
-                  <td data-label={he.findings.severity}><Badge kind={f.severity}>{he.severity[f.severity]}</Badge></td>
+                  <td data-label={he.findings.severity}>
+                    <Badge kind={f.severity}>{he.severity[f.severity]}</Badge>
+                    {f.lane === "low" && <div><Badge>{he.findings.lowLane}</Badge></div>}
+                  </td>
                   <td data-label={he.findings.type}>{he.kind[f.kind as keyof typeof he.kind] ?? f.kind}</td>
                   <td data-label={he.findings.reason}>{f.reason}<div className="small muted">{formatDateTime(f.created_at)}</div></td>
                   <td data-label={he.findings.account}>
                     <span>{he.platform[f.platform as keyof typeof he.platform] ?? f.platform}</span>{" "}
                     <bdi className="ltr">@{f.username}</bdi>
                   </td>
-                  <td className="num" data-label={he.findings.score}><bdi>{formatPercent(f.score)}</bdi></td>
+                  <td className="num" data-label={he.findings.score}><bdi>{formatPercent(f.adjusted_score ?? f.score)}</bdi></td>
                   <td><Link className="btn" to={`/findings/${f.id}`}>{he.findings.open}</Link></td>
                 </tr>
               ))}
