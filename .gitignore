@@ -1,0 +1,50 @@
+# ---- Secrets and configuration ----
+.env
+.env.*
+!.env.example
+secrets/
+*.pem
+*.key
+*.p12
+*.jks
+*.keystore
+
+# ---- Operational data: NEVER commit (rosters, consents, evidence, exports) ----
+data/
+uploads/
+evidence/
+samples/
+exports/
+*.xlsx
+*.xls
+*.xlsm
+*.ods
+*.csv
+*.tsv
+*.db
+*.sqlite
+*.sqlite3
+*.dump
+*.sql.gz
+
+# ---- ML weights (large, and may be trained on sensitive examples) ----
+*.pt
+*.onnx
+*.safetensors
+*.ckpt
+models/
+
+# ---- Build output ----
+__pycache__/
+*.pyc
+.venv/
+.pytest_cache/
+node_modules/
+dist/
+build/
+*.tsbuildinfo
+android/**/build/
+android/**/.gradle/
+android/local.properties
+*.apk
+*.aab
