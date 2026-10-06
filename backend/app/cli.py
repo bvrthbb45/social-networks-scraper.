@@ -38,8 +38,49 @@ def create_admin(email: str) -> str:
         return raw
 
 
+def make_template(kind: str, path: str) -> None:
+    """Blank workbooks with the expected headers (no data), so the unit can fill them in."""
+    from openpyxl import Workbook
+
+    heads = {
+        "roster": [
+            "מספר אישי",
+            "שם מלא",
+            "יחידה",
+            "פלטפורמה",
+            "חשבון",
+            "סטטוס",
+            "אסמכתת הסכמה",
+            "תאריך חתימה",
+            "תוקף מ",
+            "תוקף עד",
+        ],
+        "terms": ["מונח", "כינויים", "סוג", "חומרה"],
+    }
+    if kind not in heads:
+        raise SystemExit("kind must be roster or terms")
+    wb = Workbook()
+    wb.active.append(heads[kind])
+    wb.save(path)
+
+
+def expire() -> int:
+    from .maintenance import expire_consents
+
+    with SessionLocal() as db:
+        return expire_consents(db)
+
+
 if __name__ == "__main__":
+    if sys.argv[1:2] == ["expire-consents"]:
+        print(f"consents expired: {expire()}")
+        raise SystemExit(0)
+    if sys.argv[1:2] == ["make-template"] and len(sys.argv) == 4:
+        make_template(sys.argv[2], sys.argv[3])
+        raise SystemExit(0)
     if len(sys.argv) != 3 or sys.argv[1] != "create-admin":
-        raise SystemExit("usage: python -m app.cli create-admin EMAIL")
+        raise SystemExit(
+            "usage: python -m app.cli create-admin EMAIL | expire-consents | make-template roster|terms FILE"
+        )
     print("One-time invitation token (valid %dh):" % settings.invite_hours)
     print(create_admin(sys.argv[2]))
