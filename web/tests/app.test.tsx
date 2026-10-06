@@ -16,7 +16,7 @@ describe("navigation follows the role", () => {
     ["reviewer", [he.nav.dashboard, he.nav.findings, he.nav.people, he.nav.account]],
     ["uploader", [he.nav.imports, he.nav.account]],
     ["auditor", [he.nav.dashboard, he.nav.imports, he.nav.audit, he.nav.account]],
-    ["admin", [he.nav.dashboard, he.nav.findings, he.nav.people, he.nav.imports, he.nav.watchlist, he.nav.users, he.nav.audit, he.nav.account]],
+    ["admin", [he.nav.dashboard, he.nav.findings, he.nav.people, he.nav.imports, he.nav.watchlist, he.nav.learning, he.nav.users, he.nav.audit, he.nav.account]],
   ];
   it.each(cases)("%s sees exactly its own sections", async (role, labels) => {
     mockApi({ ...signedIn(role), "GET /stats": () => stats, "GET /imports": () => [], "GET /auth/devices": () => [], "GET /audit": () => [] });

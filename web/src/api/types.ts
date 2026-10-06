@@ -16,13 +16,14 @@ export interface Invite { user_id: string; token: string; expires_at: string; pu
 export interface Device { id: string; kind: "web" | "android"; name: string; created_at: string; last_seen_at: string | null; revoked_at: string | null; current: boolean }
 
 export interface FindingRow {
-  id: string; kind: string; severity: Severity; score: number; status: FindingStatus; reason: string;
+  id: string; kind: string; severity: Severity; score: number; adjusted_score: number | null; lane: "normal" | "low";
+  status: FindingStatus; reason: string;
   source: string | null; snippet: string | null; platform: string; username: string;
   post_url: string | null; posted_at: string | null; created_at: string;
 }
 export interface HistoryItem { decision: Decision; reason: DismissReason | null; note: string | null; reviewer: string | null; decided_at: string }
 export interface FindingDetail extends FindingRow {
-  engine_version: string; post_text: string; media: { index: number; kind: string }[]; history: HistoryItem[];
+  learning: string[]; engine_version: string; post_text: string; media: { index: number; kind: string }[]; history: HistoryItem[];
 }
 export interface Stats {
   findings_by_status: Record<string, number>; open_by_severity: Record<string, number>;
@@ -40,3 +41,19 @@ export interface TermsResult { created: number; updated: number; rejected: Recor
 export interface SoldierRow { id: string; full_name: string; unit: string | null; accounts: number; consents: { id: string; ref: string; status: string; valid_until: string }[] }
 export interface Term { id: string; term: string; aliases: string[]; kind: string; severity: Severity; active: boolean }
 export interface AuditRow { id: number; user_id: string | null; action: string; object_type: string | null; object_id: string | null; ip: string | null; details: Record<string, unknown> | null; created_at: string }
+
+export interface LearningModel {
+  id: string; version: number; status: "candidate" | "shadow" | "active" | "retired" | "rejected"; trained_on: number;
+  metrics: { baseline_auc: number | null; model_auc: number | null; n_labels: number; blockers: string[] } | null;
+  note: string | null; approvals: number; created_at: string; activated_at: string | null;
+}
+export interface LearningStatus {
+  labels: number; positives: number; min_labels: number; required_approvals: number; golden_cases: number;
+  active: LearningModel | null; undecided_open: number;
+}
+export interface TermStat {
+  id: string; term: string; severity: Severity; n: number; confirmed: number; precision: number;
+  advice: "mostly_false_alarms" | "effective" | null; dismiss_reasons: Record<string, number>;
+}
+export interface TermSuggestion { token: string; confirmed_posts: number; accounts: number; dismissed_posts: number }
+export interface GoldenCase { id: string; text: string; kind: string }

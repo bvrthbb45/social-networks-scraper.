@@ -1,5 +1,7 @@
+from typing import Literal
+
 from fastapi import APIRouter, Depends, File, HTTPException, Request, UploadFile, status
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
@@ -66,6 +68,41 @@ async def import_terms(
     )  # counts only, never the terms
     db.commit()
     return {**counts, "rejected": rejected}
+
+
+class TermIn(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    term: str = Field(min_length=2, max_length=120)
+    aliases: list[str] = Field(default_factory=list, max_length=20)
+    kind: Literal["codename", "site", "unit", "other"] = "codename"
+    severity: Literal["low", "medium", "high"] = "medium"
+
+
+@router.post("", status_code=status.HTTP_201_CREATED)
+def add_term(
+    body: TermIn,
+    request: Request,
+    user: User = Depends(admin_only),
+    db: Session = Depends(get_db),
+) -> dict:
+    term = excel.Term(
+        0,
+        body.term.strip(),
+        [a.strip() for a in body.aliases if a.strip()],
+        body.kind,
+        body.severity,
+    )
+    counts = service.apply_terms(db, [term], user.id)
+    audit.record(
+        db, "watchlist.term_added", request, user.id, details=counts
+    )  # counts only, never the term
+    db.commit()
+    row = db.scalar(
+        select(WatchlistTerm).where(
+            WatchlistTerm.term_hash == crypto.blind_index(term.term, "watchlist_term")
+        )
+    )
+    return _out(row)
 
 
 @router.patch("/{term_id}")

@@ -101,7 +101,15 @@ def erase_soldier(
     if s is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Not found")
     sid: uuid.UUID = s.id
+    from ..learning import service as learning
+
+    learned_from = learning.reviewed_findings_of(
+        db, db.scalars(select(Account.id).where(Account.soldier_id == s.id)).all()
+    )
     db.delete(s)
+    if learned_from:
+        db.flush()
+        learning.invalidate_for_erasure(db)
     audit.record(
         db, "soldier.erased", request, user.id, object_type="soldier", object_id=sid
     )

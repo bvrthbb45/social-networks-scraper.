@@ -38,7 +38,7 @@ async function enrol(page, token, label) {
 const admin = await (await browser.newContext({ locale: "he-IL" })).newPage();
 await enrol(admin, process.env.ADMIN_INVITE, "admin");
 await admin.getByRole("heading", { name: "לוח בקרה" }).waitFor();
-expect((await admin.getByRole("navigation").first().locator("a").count()) === 8, "admin sees all 8 sections");
+expect((await admin.getByRole("navigation").first().locator("a").count()) === 9, "admin sees all 9 sections");
 expect((await admin.locator("html").getAttribute("dir")) === "rtl", "document is right-to-left");
 
 async function createUser(email, roleLabel) {

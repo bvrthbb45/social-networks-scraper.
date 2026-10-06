@@ -293,7 +293,10 @@ def activate(db: Session, m: LearningModel) -> None:
         raise LearningError("not_activatable")
     blockers = list((m.metrics or {}).get("blockers", []))
     if blockers:
-        raise LearningError(blockers[0])
+        # safety first: a model that would bury a must-catch case is reported as that, whatever else is wrong
+        raise LearningError(
+            "golden_failed" if "golden_failed" in blockers else blockers[0]
+        )
     # the golden gate is re-run NOW: the watch-list and golden set may have changed since training
     if golden_failures(_params(m), load_terms(db), golden_cases(db)):
         raise LearningError("golden_failed")
@@ -331,6 +334,21 @@ def rollback(db: Session) -> str:
     db.flush()
     rescore_open(db)
     return "previous" if previous else "baseline"
+
+
+def reviewed_findings_of(db: Session, account_ids) -> int:
+    """How many reviewed findings belong to these accounts (i.e. how much they could have taught)."""
+    if not account_ids:
+        return 0
+    return (
+        db.scalar(
+            select(func.count(func.distinct(Review.finding_id)))
+            .join(Finding, Finding.id == Review.finding_id)
+            .join(Post, Post.id == Finding.post_id)
+            .where(Post.account_id.in_(list(account_ids)))
+        )
+        or 0
+    )
 
 
 def invalidate_for_erasure(db: Session) -> int:

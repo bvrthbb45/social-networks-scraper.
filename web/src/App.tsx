@@ -9,6 +9,7 @@ import { Dashboard } from "./pages/Dashboard";
 import { FindingDetailPage } from "./pages/FindingDetail";
 import { Findings } from "./pages/Findings";
 import { Imports } from "./pages/Imports";
+import { Learning } from "./pages/Learning";
 import { Login } from "./pages/login";
 import { People } from "./pages/People";
 import { Users } from "./pages/Users";
@@ -34,6 +35,7 @@ export function Gate() {
         <Route path="people" element={g("/people", <People />)} />
         <Route path="imports" element={g("/imports", <Imports />)} />
         <Route path="watchlist" element={g("/watchlist", <Watchlist />)} />
+        <Route path="learning" element={g("/learning", <Learning />)} />
         <Route path="users" element={g("/users", <Users />)} />
         <Route path="audit" element={g("/audit", <Audit />)} />
         <Route path="account" element={g("/account", <Account />)} />
