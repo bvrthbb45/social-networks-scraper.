@@ -54,9 +54,13 @@ def test_normal_files_pass(path):
 
 
 def test_private_keys_and_cloud_credentials_in_content_are_blocked():
-    key = b"-----BEGIN PRIVATE KEY-----\nabc\n-----END PRIVATE KEY-----"
+    # Built at runtime so this test file does not itself look like a leaked secret.
+    key = (
+        "-----BEGIN " + "PRIVATE KEY-----\nabc\n-----END " + "PRIVATE KEY-----"
+    ).encode()
+    cloud = ("aws=AKI" + "AABCDEFGHIJKLMNOP").encode()
     assert guard.violations_for("notes.txt", lambda _p: key)
-    assert guard.violations_for("notes.txt", lambda _p: b"aws=AKIAABCDEFGHIJKLMNOP")
+    assert guard.violations_for("notes.txt", lambda _p: cloud)
     assert guard.violations_for("notes.txt", lambda _p: b"just text") == []
 
 
