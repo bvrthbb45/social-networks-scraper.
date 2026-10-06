@@ -96,8 +96,10 @@ def import_posts(
 def list_findings(
     status_: str = "new",
     severity: str | None = None,
+    kind: str | None = None,
+    platform: str | None = None,
     limit: int = 50,
-    before: str | None = None,
+    offset: int = 0,
     user: User = Depends(require_roles("reviewer", "admin")),
     db: Session = Depends(get_db),
 ) -> list[dict]:
@@ -106,11 +108,16 @@ def list_findings(
         .join(Post, Post.id == Finding.post_id)
         .join(Account, Account.id == Post.account_id)
         .where(Finding.status == status_)
-        .order_by(Finding.created_at.desc(), Finding.score.desc())
+        .order_by(Finding.score.desc(), Finding.created_at.desc())
         .limit(max(1, min(limit, 200)))
+        .offset(max(0, offset))
     )
     if severity:
         q = q.where(Finding.severity == severity)
+    if kind:
+        q = q.where(Finding.kind == kind)
+    if platform:
+        q = q.where(Account.platform == platform)
     out = []
     for f, p, a in db.execute(q).all():
         ev = (
