@@ -72,6 +72,12 @@ def expire() -> int:
 
 
 if __name__ == "__main__":
+    if sys.argv[1:2] == ["analyze-pending"]:
+        from .analysis.pipeline import analyze_pending
+
+        with SessionLocal() as db:
+            print(f"new findings: {analyze_pending(db)}")
+        raise SystemExit(0)
     if sys.argv[1:2] == ["expire-consents"]:
         print(f"consents expired: {expire()}")
         raise SystemExit(0)
@@ -80,7 +86,7 @@ if __name__ == "__main__":
         raise SystemExit(0)
     if len(sys.argv) != 3 or sys.argv[1] != "create-admin":
         raise SystemExit(
-            "usage: python -m app.cli create-admin EMAIL | expire-consents | make-template roster|terms FILE"
+            "usage: python -m app.cli create-admin EMAIL | expire-consents | analyze-pending | make-template roster|terms FILE"
         )
     print("One-time invitation token (valid %dh):" % settings.invite_hours)
     print(create_admin(sys.argv[2]))

@@ -337,6 +337,8 @@ class Post(Base):
         DateTime(timezone=True), server_default=func.now()
     )
     delete_after: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True)
+    # Engine version that last analysed this post (NULL = not analysed yet).
+    analyzed_version: Mapped[str | None] = mapped_column(String(40))
 
     account: Mapped[Account] = relationship(back_populates="posts")
     findings: Mapped[list["Finding"]] = relationship(

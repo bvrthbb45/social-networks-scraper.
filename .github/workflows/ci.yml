@@ -38,6 +38,8 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
+      - name: Install OCR engine (Hebrew)
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq tesseract-ocr tesseract-ocr-heb
       - run: pip install -r requirements-dev.txt
       - run: black --check .
       - run: pytest -q
