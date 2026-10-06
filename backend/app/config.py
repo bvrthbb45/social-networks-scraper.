@@ -44,6 +44,12 @@ class Settings(BaseSettings):
 
     # Collected public content is deleted automatically after this many days.
     retention_days: int = 90
+    # Housekeeping of sign-in artefacts (days after they stopped being usable).
+    token_cleanup_days: int = 30
+    device_cleanup_days: int = 90
+    # 0 = off. When > 0 an active learning model older than this is retired, so a model never
+    # outlives the data it was trained on by more than this many days (a policy for the legal owner).
+    learning_max_model_age_days: int = 0
 
     # Sessions. Every login creates a "device" (web browser or Android app) that can be revoked.
     access_token_minutes: int = 10

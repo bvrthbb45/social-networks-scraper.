@@ -15,6 +15,7 @@ from .routers import (
     learning,
     people,
     posts,
+    reports,
     review,
     users,
     watchlist,
@@ -55,6 +56,7 @@ app.include_router(watchlist.router)
 app.include_router(posts.router)
 app.include_router(review.router)
 app.include_router(learning.router)
+app.include_router(reports.router)
 
 
 @app.get("/health")

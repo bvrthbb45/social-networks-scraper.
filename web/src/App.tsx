@@ -12,6 +12,7 @@ import { Imports } from "./pages/Imports";
 import { Learning } from "./pages/Learning";
 import { Login } from "./pages/login";
 import { People } from "./pages/People";
+import { Reports } from "./pages/Reports";
 import { Users } from "./pages/Users";
 import { Watchlist } from "./pages/Watchlist";
 import type { ReactNode } from "react";
@@ -37,6 +38,7 @@ export function Gate() {
         <Route path="watchlist" element={g("/watchlist", <Watchlist />)} />
         <Route path="learning" element={g("/learning", <Learning />)} />
         <Route path="users" element={g("/users", <Users />)} />
+        <Route path="reports" element={g("/reports", <Reports />)} />
         <Route path="audit" element={g("/audit", <Audit />)} />
         <Route path="account" element={g("/account", <Account />)} />
         <Route path="*" element={<Navigate to={homeFor(user.role)} replace />} />
