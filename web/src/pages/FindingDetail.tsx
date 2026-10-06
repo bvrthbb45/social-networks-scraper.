@@ -85,7 +85,7 @@ function Evidence({ findingId, index }: { findingId: string; index: number }) {
   if (url) {
     return (
       <figure className="stack" style={{ margin: 0 }}>
-        <img src={url} alt={`${he.findings.images} ${index + 1}`} style={{ maxInlineSize: "100%", borderRadius: "var(--radius-sm)" }} />
+        <img src={url} alt={`${he.findings.images} ${index + 1}`} style={{ maxInlineSize: "100%", borderRadius: "var(--round-s)" }} />
         <button className="btn" onClick={() => setUrl(null)}>{he.findings.hideImage}</button>
       </figure>
     );

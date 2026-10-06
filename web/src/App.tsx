@@ -9,7 +9,7 @@ import { Dashboard } from "./pages/Dashboard";
 import { FindingDetailPage } from "./pages/FindingDetail";
 import { Findings } from "./pages/Findings";
 import { Imports } from "./pages/Imports";
-import { Login } from "./pages/Login";
+import { Login } from "./pages/login";
 import { People } from "./pages/People";
 import { Users } from "./pages/Users";
 import { Watchlist } from "./pages/Watchlist";

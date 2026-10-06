@@ -1,7 +1,16 @@
-from slowapi import Limiter
-from slowapi.util import get_remote_address
+"""Request rate limiting (per client address).
 
-# In-memory storage: fine for a single instance. Use Redis storage if the API
-# is ever scaled horizontally. Behind a reverse proxy run uvicorn with
-# --proxy-headers so the real client address is used.
-limiter = Limiter(key_func=get_remote_address)
+The counters live in process memory: correct for the single API instance this system runs as. If
+it is ever scaled out, switch the limiter to a shared (Redis) storage URI. Behind the reverse proxy
+the API is started with ``--proxy-headers`` so ``request.client`` is the real caller.
+"""
+
+from slowapi import Limiter
+from starlette.requests import Request
+
+
+def client_key(request: Request) -> str:
+    return request.client.host if request.client else "unknown"
+
+
+limiter = Limiter(key_func=client_key)

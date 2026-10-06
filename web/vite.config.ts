@@ -1,23 +1,15 @@
 import react from "@vitejs/plugin-react";
 import { defineConfig } from "vitest/config";
 
-// Dev: the browser talks to the Vite server only (same origin), which forwards
-// /api/* to the FastAPI backend. That keeps the refresh cookie first-party; set
-// REFRESH_COOKIE_PATH=/api/auth on the backend (see .env.example).
+// In development the browser only talks to the Vite server (one origin). It forwards /api/* to the
+// FastAPI backend with the prefix removed, so the httpOnly refresh cookie stays first-party.
+// The backend must then set REFRESH_COOKIE_PATH=/api/auth (see .env.example).
+const backend = process.env.API_URL ?? "http://localhost:8000";
+
 export default defineConfig({
   plugins: [react()],
   server: {
-    proxy: {
-      "/api": {
-        target: process.env.API_URL ?? "http://localhost:8000",
-        rewrite: (path) => path.replace(/^\/api/, ""),
-      },
-    },
+    proxy: { "/api": { target: backend, rewrite: (path) => path.replace(/^\/api/, "") } },
   },
-  test: {
-    environment: "jsdom",
-    globals: true,
-    setupFiles: ["tests/setup.ts"],
-    css: false,
-  },
+  test: { environment: "jsdom", globals: true, setupFiles: ["tests/setup.ts"], css: false },
 });

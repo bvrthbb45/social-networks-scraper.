@@ -49,7 +49,7 @@ export function People() {
                   <td data-label={he.people.unit} dir="auto">{s.unit ?? ""}</td>
                   <td className="num" data-label={he.people.accounts}><bdi>{s.accounts}</bdi></td>
                   <td data-label={he.people.consents}>
-                    <div className="stack" style={{ gap: "var(--space-2)" }}>
+                    <div className="stack" style={{ gap: "var(--gap-2)" }}>
                       {s.consents.map((c) => (
                         <div key={c.id} className="row">
                           <Badge kind={c.status === "active" ? "ok" : "medium"}>{he.people.consentStatus[c.status as keyof typeof he.people.consentStatus] ?? c.status}</Badge>
