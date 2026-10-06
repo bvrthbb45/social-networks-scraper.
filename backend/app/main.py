@@ -8,7 +8,7 @@ from slowapi.errors import RateLimitExceeded
 from .config import settings
 from .limiter import limiter
 from .middleware import SecurityHeadersMiddleware
-from .routers import audit, auth, users
+from .routers import audit, auth, imports, people, users, watchlist
 
 
 @asynccontextmanager
@@ -39,6 +39,9 @@ app.add_middleware(
 app.include_router(auth.router)
 app.include_router(users.router)
 app.include_router(audit.router)
+app.include_router(imports.router)
+app.include_router(people.router)
+app.include_router(watchlist.router)
 
 
 @app.get("/health")

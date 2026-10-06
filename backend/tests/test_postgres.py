@@ -106,3 +106,50 @@ def test_consent_is_enforced_by_the_database(engine):
         with engine.begin() as c:
             c.execute(sa.text(insert.format(consent="gen_random_uuid()")), {"s": sid})
     assert isinstance(unknown.value.orig, pgerr.ForeignKeyViolation)
+
+
+def test_import_and_consent_revocation_cascade_on_postgres(engine, monkeypatch):
+    """The importer's ORM writes and the revocation cascade work against the real schema."""
+    import uuid
+    from datetime import datetime, timedelta, timezone
+
+    from sqlalchemy.orm import Session
+
+    from app import models as m
+    from app.config import settings
+    from app.ingest import excel, service
+    from app.maintenance import end_consent
+    from tests.conftest import KEY, KEY2
+    from tests.xlsx_helpers import good_row, workbook
+
+    monkeypatch.setattr(settings, "field_encryption_key", KEY)
+    monkeypatch.setattr(settings, "blind_index_key", KEY2)
+    data = workbook([good_row(1), good_row(2)])
+    with Session(engine) as db:
+        actor = m.User(email="u@example.org", role="uploader", password_hash="!")
+        db.add(actor)
+        db.flush()
+        imp, res = service.apply_roster(
+            db, excel.parse_roster(data), "r.xlsx", data, actor.id
+        )
+        assert res.accounts_created == 2 and imp.rows_accepted == 2
+        acct = db.scalars(sa.select(m.Account)).first()
+        db.add(
+            m.Post(
+                account_id=acct.id,
+                content_hash="h",
+                delete_after=datetime.now(timezone.utc) + timedelta(days=5),
+            )
+        )
+        db.commit()
+        consent = db.get(m.Consent, acct.consent_id)
+        assert end_consent(db, consent, "revoked", actor.id) == 1
+        db.commit()
+        assert db.scalar(sa.select(sa.func.count()).select_from(m.Post)) == 0
+        assert (
+            db.scalar(sa.select(sa.func.count()).select_from(m.Account)) == 1
+        )  # the other soldier
+        assert db.scalar(
+            sa.select(m.AuditLog.action).where(m.AuditLog.action == "consent.revoked")
+        )
+    _ = uuid
