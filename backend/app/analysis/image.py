@@ -140,7 +140,7 @@ def uniform_hit(img: Image.Image) -> Hit | None:
     (full-frame green/beige is scenery or a wall, not a garment)."""
     small = img.resize((128, 128))
     hsv = np.asarray(small.convert("HSV"), dtype=np.uint8)
-    best: tuple[float, str] | None = None
+    best: tuple[float, str, dict] | None = None
     for name, rng in (("green", _OLIVE), ("beige", _BEIGE)):
         mask = _mask(hsv, rng)
         cells = (
@@ -152,7 +152,20 @@ def uniform_hit(img: Image.Image) -> Hit | None:
             continue
         score = min(0.6, round(0.3 + 1.2 * share, 3))
         if best is None or score > best[0]:
-            best = (score, name)
+            px = hsv[mask]
+            mean = (px.mean(axis=0) / 255.0).round(3).tolist() if len(px) else [0, 0, 0]
+            best = (
+                score,
+                name,
+                {
+                    "share": round(share, 3),
+                    "edges": len(edges),
+                    "h": mean[0],
+                    "s": mean[1],
+                    "v": mean[2],
+                    "green": 1.0 if name == "green" else 0.0,
+                },
+            )
     if best is None:
         return None
     colour = "ירוק-זית" if best[1] == "green" else "בז'/חאקי"
@@ -165,6 +178,7 @@ def uniform_hit(img: Image.Image) -> Hit | None:
         "",
         None,
         f"uniform-{best[1]}",
+        best[2],
     )
 
 

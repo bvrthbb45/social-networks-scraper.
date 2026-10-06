@@ -37,6 +37,11 @@ class Settings(BaseSettings):
     media_dir: str = "/data/media"
     model_dir: str = ""
 
+    # Learning: a model is only trained with at least this many reviewed findings, and only
+    # promoted after this many different people approved it.
+    learning_min_labels: int = 40
+    learning_required_approvals: int = 2
+
     # Collected public content is deleted automatically after this many days.
     retention_days: int = 90
 

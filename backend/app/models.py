@@ -407,11 +407,80 @@ class Finding(Base):
     engine_version: Mapped[str] = mapped_column(String(40), default="")
     status: Mapped[str] = mapped_column(String(10), default="new", index=True)
     created_at: Mapped[datetime] = _created()
+    # Learning (Loop 6). ``score`` is what the engine said and never changes; the learned layer
+    # only re-ranks. ``shadow_score`` is a candidate model's opinion, recorded but never shown.
+    adjusted_score: Mapped[Decimal | None] = mapped_column(Numeric(4, 3))
+    scored_by_model: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("learning_models.id", ondelete="SET NULL")
+    )
+    shadow_score: Mapped[Decimal | None] = mapped_column(Numeric(4, 3))
+    shadow_model: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("learning_models.id", ondelete="SET NULL")
+    )
 
     post: Mapped[Post] = relationship(back_populates="findings")
     reviews: Mapped[list["Review"]] = relationship(
         back_populates="finding", cascade="all, delete-orphan"
     )
+
+
+MODEL_STATUSES = ("candidate", "shadow", "active", "retired", "rejected")
+
+
+class LearningModel(Base):
+    """A calibration model learned from reviewers' decisions. At most one is ``active``; with none
+    active the system runs on the plain engine scores (the baseline)."""
+
+    __tablename__ = "learning_models"
+    __table_args__ = (CheckConstraint(_in("status", MODEL_STATUSES), name="status"),)
+
+    id: Mapped[uuid.UUID] = _uuid_pk()
+    version: Mapped[int] = mapped_column(Integer, unique=True)
+    status: Mapped[str] = mapped_column(String(10), default="candidate", index=True)
+    params_enc: Mapped[bytes] = mapped_column(
+        LargeBinary
+    )  # statistics + weights, encrypted
+    metrics: Mapped[dict | None] = mapped_column(JsonType)  # aggregates only
+    trained_on: Mapped[int] = mapped_column(Integer, default=0)
+    note: Mapped[str | None] = mapped_column(String(200))  # e.g. why it was retired
+    trained_by: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("users.id", ondelete="SET NULL")
+    )
+    created_at: Mapped[datetime] = _created()
+    activated_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    retired_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+
+class ModelApproval(Base):
+    """Promotion needs several different people (see ``LEARNING_REQUIRED_APPROVALS``)."""
+
+    __tablename__ = "model_approvals"
+    __table_args__ = (UniqueConstraint("model_id", "user_id", name="model_user"),)
+
+    id: Mapped[uuid.UUID] = _uuid_pk()
+    model_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("learning_models.id", ondelete="CASCADE"), index=True
+    )
+    user_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("users.id", ondelete="SET NULL")
+    )
+    approved_at: Mapped[datetime] = _created()
+
+
+class GoldenCase(Base):
+    """A 'must-catch' example chosen by an administrator. A model that would push one of these
+    below the visibility floor is refused promotion."""
+
+    __tablename__ = "golden_cases"
+    __table_args__ = (CheckConstraint(_in("kind", FINDING_KINDS), name="kind"),)
+
+    id: Mapped[uuid.UUID] = _uuid_pk()
+    text_enc: Mapped[bytes] = mapped_column(LargeBinary)
+    kind: Mapped[str] = mapped_column(String(20))
+    created_by: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("users.id", ondelete="SET NULL")
+    )
+    created_at: Mapped[datetime] = _created()
 
 
 class Review(Base):
