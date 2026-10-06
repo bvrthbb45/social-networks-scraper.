@@ -48,3 +48,7 @@ android/**/.gradle/
 android/local.properties
 *.apk
 *.aab
+
+# encrypted media volume (never commit)
+media/
+*.bin

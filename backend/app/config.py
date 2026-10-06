@@ -33,6 +33,10 @@ class Settings(BaseSettings):
     field_encryption_key_id: int = 1
     field_encryption_old_keys: str = ""
 
+    # Encrypted media files and (optional) trained model weights live outside the database/repo.
+    media_dir: str = "/data/media"
+    model_dir: str = ""
+
     # Collected public content is deleted automatically after this many days.
     retention_days: int = 90
 
