@@ -1,94 +1,122 @@
+// HTTP client for the monitor API.
+//
+// Session model: the short-lived access token is kept in a module variable only (never in web
+// storage, so a script injected into the page cannot read it from there). The long-lived refresh
+// credential is an httpOnly cookie the browser sends by itself; a 401 triggers one silent refresh.
+
 import type { Session } from "./types";
 
-const BASE = import.meta.env.VITE_API_BASE ?? "/api";
+const API_ROOT: string = import.meta.env.VITE_API_BASE ?? "/api";
 
 export class ApiError extends Error {
-  constructor(public status: number, public detail: string) {
+  readonly status: number;
+  readonly detail: string;
+  constructor(status: number, detail: string) {
     super(detail);
+    this.status = status;
+    this.detail = detail;
   }
 }
 
-// The access token lives only in memory (never localStorage): an XSS cannot
-// read it from storage, and the httpOnly refresh cookie restores sessions.
-let accessToken: string | null = null;
-let onSessionLost: (() => void) | null = null;
-let refreshing: Promise<boolean> | null = null;
-
-export const setAccessToken = (t: string | null) => { accessToken = t; };
-export const setSessionLostHandler = (fn: (() => void) | null) => { onSessionLost = fn; };
-
-interface Options {
+export interface RequestOptions {
   method?: string;
   body?: unknown;
-  token?: string;      // explicit bearer (login step tokens)
-  noAuth?: boolean;
-  noRefresh?: boolean;
+  /** Bearer for the sign-in steps (password-ok / 2FA-setup tokens); disables auto-refresh. */
+  token?: string;
+  /** Send without any Authorization header. */
+  anonymous?: boolean;
 }
 
-async function send(path: string, opts: Options): Promise<Response> {
-  const headers: Record<string, string> = {};
-  const isForm = typeof FormData !== "undefined" && opts.body instanceof FormData;
-  if (opts.body !== undefined && !isForm) headers["Content-Type"] = "application/json";
-  const token = opts.token ?? (opts.noAuth ? null : accessToken);
-  if (token) headers.Authorization = `Bearer ${token}`;
+let accessToken: string | null = null;
+let whenSessionLost: (() => void) | undefined;
+let refreshInFlight: Promise<boolean> | null = null;
+
+export function setAccessToken(token: string | null): void {
+  accessToken = token;
+}
+export function setSessionLostHandler(handler: (() => void) | null): void {
+  whenSessionLost = handler ?? undefined;
+}
+
+function buildInit(opts: RequestOptions): RequestInit {
+  const headers = new Headers();
+  const bearer = opts.token ?? (opts.anonymous ? null : accessToken);
+  if (bearer) headers.set("Authorization", `Bearer ${bearer}`);
+
+  const init: RequestInit = { method: opts.method ?? "GET", headers, credentials: "include" };
+  if (opts.body instanceof FormData) {
+    init.body = opts.body; // the browser sets the multipart boundary itself
+  } else if (opts.body !== undefined) {
+    headers.set("Content-Type", "application/json");
+    init.body = JSON.stringify(opts.body);
+  }
+  return init;
+}
+
+async function transport(path: string, opts: RequestOptions): Promise<Response> {
   try {
-    return await fetch(`${BASE}${path}`, {
-      method: opts.method ?? "GET",
-      headers,
-      credentials: "include",
-      body: opts.body === undefined ? undefined : isForm ? (opts.body as FormData) : JSON.stringify(opts.body),
-    });
+    return await fetch(`${API_ROOT}${path}`, buildInit(opts));
   } catch {
     throw new ApiError(0, "network");
   }
 }
 
+/** Ask the server for a fresh access token using the refresh cookie. Concurrent callers share one request. */
 export function refreshSession(): Promise<boolean> {
-  refreshing ??= (async () => {
-    try {
-      const res = await send("/auth/refresh", { method: "POST", noAuth: true, noRefresh: true });
-      if (!res.ok) return false;
-      accessToken = ((await res.json()) as Session).access_token;
-      return true;
-    } catch {
-      return false;
-    } finally {
-      refreshing = null;
-    }
-  })();
-  return refreshing;
+  if (!refreshInFlight) {
+    refreshInFlight = (async () => {
+      try {
+        const res = await transport("/auth/refresh", { method: "POST", anonymous: true });
+        if (!res.ok) return false;
+        accessToken = ((await res.json()) as Session).access_token;
+        return true;
+      } catch {
+        return false;
+      } finally {
+        refreshInFlight = null;
+      }
+    })();
+  }
+  return refreshInFlight;
 }
 
-export async function api<T = unknown>(path: string, opts: Options = {}): Promise<T> {
-  let res = await send(path, opts);
-  if (res.status === 401 && !opts.token && !opts.noAuth && !opts.noRefresh) {
-    if (await refreshSession()) res = await send(path, opts);
-    else { accessToken = null; onSessionLost?.(); }
+async function sendWithRefresh(path: string, opts: RequestOptions): Promise<Response> {
+  const res = await transport(path, opts);
+  const refreshable = res.status === 401 && !opts.token && !opts.anonymous;
+  if (!refreshable) return res;
+  if (await refreshSession()) return transport(path, opts);
+  accessToken = null;
+  whenSessionLost?.();
+  return res;
+}
+
+async function failure(res: Response): Promise<ApiError> {
+  let detail = res.statusText;
+  try {
+    const payload = await res.json();
+    detail = typeof payload.detail === "string" ? payload.detail : JSON.stringify(payload.detail);
+  } catch {
+    /* the error body was not JSON */
   }
-  if (!res.ok) {
-    let detail = res.statusText;
-    try {
-      const data = await res.json();
-      detail = typeof data.detail === "string" ? data.detail : JSON.stringify(data.detail);
-    } catch { /* non-JSON error body */ }
-    throw new ApiError(res.status, detail);
-  }
+  return new ApiError(res.status, detail);
+}
+
+export async function api<T = unknown>(path: string, opts: RequestOptions = {}): Promise<T> {
+  const res = await sendWithRefresh(path, opts);
+  if (!res.ok) throw await failure(res);
   return res.status === 204 ? (undefined as T) : ((await res.json()) as T);
 }
 
 export const get = <T,>(path: string) => api<T>(path);
-export const post = <T,>(path: string, body?: unknown, opts: Options = {}) =>
+export const post = <T,>(path: string, body?: unknown, opts: RequestOptions = {}) =>
   api<T>(path, { ...opts, method: "POST", body });
-export const put = <T,>(path: string, body: unknown) => api<T>(path, { method: "PUT", body });
 export const patch = <T,>(path: string, body: unknown) => api<T>(path, { method: "PATCH", body });
 export const del = (path: string) => api<void>(path, { method: "DELETE" });
+export const upload = <T,>(path: string, form: FormData) => api<T>(path, { method: "POST", body: form });
 
-/** Authenticated binary download (evidence images). Returned as a short-lived object URL. */
+/** Download authenticated binary content (evidence images) as a temporary object URL. */
 export async function blobUrl(path: string): Promise<string> {
-  let res = await send(path, {});
-  if (res.status === 401 && (await refreshSession())) res = await send(path, {});
+  const res = await sendWithRefresh(path, {});
   if (!res.ok) throw new ApiError(res.status, res.statusText);
   return URL.createObjectURL(await res.blob());
 }
-
-export const upload = <T,>(path: string, form: FormData) => api<T>(path, { method: "POST", body: form });

@@ -1,41 +1,46 @@
-// Fails when CSS/TSX uses physical (left/right) properties instead of logical ones.
-// Add "rtl-ok" in a comment on the same line to allow a deliberate exception.
+// Right-to-left guard: the UI is Hebrew, so layout must use logical (start/end) properties.
+// Physical left/right values break mirroring. Add "rtl-ok" to a line to allow a deliberate exception.
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
 
-const RULES = [
-  [/\b(margin|padding)-(left|right)\b/, "use margin/padding-inline-start/end"],
-  [/\bborder-(left|right)\b/, "use border-inline-start/end"],
-  [/\bborder-(top|bottom)-(left|right)-radius\b/, "use border-start-start-radius etc."],
-  [/(^|[;{\s])(left|right)\s*:/, "use inset-inline-start/end"],
-  [/text-align\s*:\s*(left|right)\b/, "use text-align: start/end"],
-  [/float\s*:\s*(left|right)\b/, "use float: inline-start/end"],
-  [/\b(margin|padding)(Left|Right)\b/, "use marginInline*/paddingInline* in style props"],
-  [/\bborder(Left|Right)\b/, "use borderInline* in style props"],
-  [/\btextAlign\s*:\s*["'](left|right)["']/, 'use textAlign: "start" | "end"'],
-  [/\b(ml|mr|pl|pr)-\d/, "use ms-/me-/ps-/pe- logical utilities"],
+const FORBIDDEN = [
+  { re: /\b(?:margin|padding)-(?:left|right)\b/, fix: "margin/padding-inline-start|end" },
+  { re: /\bborder-(?:left|right)(?:-[a-z]+)?\b/, fix: "border-inline-start|end" },
+  { re: /\bborder-(?:top|bottom)-(?:left|right)-radius\b/, fix: "border-start-start-radius and friends" },
+  { re: /(?:^|[;{\s])(?:left|right)\s*:/, fix: "inset-inline-start|end" },
+  { re: /text-align\s*:\s*(?:left|right)\b/, fix: "text-align: start|end" },
+  { re: /float\s*:\s*(?:left|right)\b/, fix: "float: inline-start|end" },
+  { re: /\b(?:margin|padding|border)(?:Left|Right)\b/, fix: "the *Inline* variants in style props" },
+  { re: /\btextAlign\s*:\s*["'](?:left|right)["']/, fix: 'textAlign: "start" | "end"' },
+  { re: /\b(?:ml|mr|pl|pr)-\d/, fix: "ms-/me-/ps-/pe- utilities" },
 ];
 
-function* files(dir) {
-  for (const name of readdirSync(dir)) {
-    const p = join(dir, name);
-    if (statSync(p).isDirectory()) yield* files(p);
-    else if (/\.(css|tsx|ts)$/.test(name)) yield p;
-  }
-}
-
-let bad = 0;
-for (const file of files("src")) {
-  readFileSync(file, "utf8").split("\n").forEach((line, i) => {
-    if (/rtl-ok/.test(line)) return;
-    const code = line.replace(/\/\/.*$/, "").replace(/\/\*.*?\*\//g, "");
-    for (const [re, hint] of RULES) {
-      if (re.test(code)) {
-        console.error(`${file}:${i + 1}: physical direction (${hint})\n    ${line.trim()}`);
-        bad++;
-      }
-    }
+function sourceFiles(dir) {
+  return readdirSync(dir).flatMap((name) => {
+    const path = join(dir, name);
+    if (statSync(path).isDirectory()) return sourceFiles(path);
+    return /\.(?:css|tsx?)$/.test(name) ? [path] : [];
   });
 }
-if (bad) { console.error(`\nRTL lint: ${bad} problem(s)`); process.exit(1); }
+
+const stripComments = (line) => line.replace(/\/\/.*$/, "").replace(/\/\*.*?\*\//g, "");
+
+const problems = [];
+for (const file of sourceFiles("src")) {
+  readFileSync(file, "utf8")
+    .split("\n")
+    .forEach((line, index) => {
+      if (line.includes("rtl-ok")) return;
+      const code = stripComments(line);
+      for (const { re, fix } of FORBIDDEN) {
+        if (re.test(code)) problems.push(`${file}:${index + 1}  use ${fix}\n    ${line.trim()}`);
+      }
+    });
+}
+
+if (problems.length) {
+  console.error(problems.join("\n"));
+  console.error(`\nRTL lint: ${problems.length} physical-direction use(s)`);
+  process.exit(1);
+}
 console.log("RTL lint: OK");

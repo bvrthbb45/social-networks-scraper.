@@ -1,5 +1,8 @@
+"""Time-based one-time codes (RFC 6238) and single-use recovery codes."""
+
 import hashlib
 import hmac
+import re
 import secrets
 import time
 
@@ -7,8 +10,11 @@ import pyotp
 
 from ..config import settings
 
-STEP = 30
-_ALPHABET = "abcdefghjkmnpqrstuvwxyz23456789"  # no look-alike characters
+PERIOD = 30  # seconds per code
+DRIFT = 1  # accept codes from one period before / after (clock skew)
+RECOVERY_COUNT = 10
+# Crockford-style alphabet without characters that are easy to misread (0/o, 1/l/i).
+_RECOVERY_ALPHABET = "abcdefghjkmnpqrstvwxyz23456789"
 
 
 def new_secret() -> str:
@@ -21,31 +27,39 @@ def provisioning_uri(secret: str, email: str) -> str:
     )
 
 
-def verify(secret: str, code: str, last_step: int | None) -> int | None:
-    """Check a 6-digit code (±1 step of clock drift).
+def _steps_around(now: float) -> range:
+    current = int(now // PERIOD)
+    return range(current - DRIFT, current + DRIFT + 1)
 
-    Returns the matched time step, or None. A step that is not newer than
-    ``last_step`` is rejected, so a code cannot be replayed.
+
+def verify(secret: str, code: str, last_step: int | None) -> int | None:
+    """Return the time step the code belongs to, or None.
+
+    ``last_step`` is the newest step already used by this account; any step at or before it is
+    refused, so an intercepted code cannot be replayed within its validity window.
     """
-    if not (code.isascii() and code.isdigit() and len(code) == 6):
+    if len(code) != 6 or not (code.isascii() and code.isdigit()):
         return None
-    now_step = int(time.time()) // STEP
-    totp = pyotp.TOTP(secret, interval=STEP)
-    for step in (now_step - 1, now_step, now_step + 1):
+    generator = pyotp.TOTP(secret, interval=PERIOD)
+    for step in _steps_around(time.time()):
         if last_step is not None and step <= last_step:
             continue
-        if hmac.compare_digest(totp.at(step * STEP), code):
+        if hmac.compare_digest(generator.at(step * PERIOD), code):
             return step
     return None
 
 
-def new_recovery_codes(n: int = 10) -> list[str]:
-    def one() -> str:
-        return "".join(secrets.choice(_ALPHABET) for _ in range(10))
-
-    return [f"{c[:5]}-{c[5:]}" for c in (one() for _ in range(n))]
+def new_recovery_codes(n: int = RECOVERY_COUNT) -> list[str]:
+    """Codes look like ``abcde-fghjk`` (50 bits each)."""
+    codes = []
+    for _ in range(n):
+        raw = "".join(secrets.choice(_RECOVERY_ALPHABET) for _ in range(10))
+        codes.append(f"{raw[:5]}-{raw[5:]}")
+    return codes
 
 
 def hash_recovery_code(code: str) -> str:
-    # Codes are 50 bits of randomness, so a fast hash is sufficient.
-    return hashlib.sha256(code.strip().lower().encode()).hexdigest()
+    """Case, spaces and the dash are ignored when comparing. 50 random bits make a plain
+    SHA-256 adequate for storage (there is nothing to brute-force offline)."""
+    canonical = re.sub(r"[\s-]", "", code).lower()
+    return hashlib.sha256(f"recovery:{canonical}".encode()).hexdigest()
