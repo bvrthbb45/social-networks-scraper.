@@ -59,6 +59,7 @@ FINDING_KINDS = (
 SEVERITIES = ("low", "medium", "high")
 FINDING_STATUSES = ("new", "in_review", "confirmed", "dismissed", "escalated")
 DECISIONS = ("confirmed", "dismissed", "escalated")
+DISMISS_REASONS = ("not_relevant", "common_word", "public_info", "other")
 TERM_KINDS = ("codename", "site", "unit", "other")
 
 
@@ -417,7 +418,12 @@ class Review(Base):
     """A reviewer's decision on a finding."""
 
     __tablename__ = "reviews"
-    __table_args__ = (CheckConstraint(_in("decision", DECISIONS), name="decision"),)
+    __table_args__ = (
+        CheckConstraint(_in("decision", DECISIONS), name="decision"),
+        CheckConstraint(
+            "reason IS NULL OR " + _in("reason", DISMISS_REASONS), name="reason"
+        ),
+    )
 
     id: Mapped[uuid.UUID] = _uuid_pk()
     finding_id: Mapped[uuid.UUID] = mapped_column(
@@ -427,6 +433,8 @@ class Review(Base):
         ForeignKey("users.id", ondelete="SET NULL"), index=True
     )
     decision: Mapped[str] = mapped_column(String(10))
+    # Why a lead was dismissed / what it was; structured so Loop 6 can learn from it.
+    reason: Mapped[str | None] = mapped_column(String(20))
     note_enc: Mapped[bytes | None] = mapped_column(LargeBinary)
     decided_at: Mapped[datetime] = _created()
 

@@ -1,0 +1,108 @@
+// Single source of every user-visible string. The whole UI is Hebrew.
+// (lint:he fails the build if a Latin-only string sneaks in.)
+
+export const he = {
+  app: { name: "מוניטור אבטחת מידע", tagline: "מחלקת ביטחון מידע" },
+  nav: {
+    dashboard: "לוח בקרה", findings: "התראות", people: "חיילים וחשבונות", imports: "ייבוא קבצים",
+    watchlist: "רשימת מעקב", users: "משתמשים", audit: "יומן ביקורת", account: "החשבון שלי",
+    logout: "יציאה", main: "ניווט ראשי",
+  },
+  common: {
+    loading: "טוען…", retry: "נסו שוב", cancel: "ביטול", close: "סגירה", save: "שמירה", confirm: "אישור",
+    genericError: "משהו השתבש. נסו שוב.", networkError: "אין חיבור לשרת. בדקו את החיבור ונסו שוב.",
+    forbidden: "אין לכם הרשאה לפעולה הזו.", loadMore: "טעינת עוד", prev: "הקודם", none: "אין נתונים להצגה.", copy: "העתקה",
+    copied: "הועתק", yes: "כן", no: "לא", all: "הכול", never: "אף פעם", delete: "מחיקה", actions: "פעולות",
+  },
+  auth: {
+    loginTitle: "כניסה למערכת", email: "כתובת אימייל", password: "סיסמה", login: "כניסה",
+    invalidCredentials: "פרטי הכניסה שגויים, או שהחשבון נעול זמנית.", tooMany: "יותר מדי ניסיונות. נסו שוב בעוד דקה.",
+    mfaTitle: "אימות דו-שלבי", mfaPrompt: "הזינו את הקוד בן 6 הספרות מאפליקציית האימות (למשל Google Authenticator).",
+    code: "קוד אימות", recoveryCode: "קוד שחזור", verify: "אימות", useRecovery: "אין לי גישה לאפליקציה – שימוש בקוד שחזור",
+    useApp: "חזרה לקוד מהאפליקציה", invalidCode: "הקוד שגוי או שפג תוקפו.", back: "חזרה",
+    setupTitle: "הפעלת אימות דו-שלבי", setupIntro: "סרקו את הקוד באפליקציית האימות, או הזינו את המפתח ידנית, ואז הזינו את הקוד שמוצג.",
+    qrAlt: "קוד QR להגדרת אפליקציית האימות", manualKey: "מפתח להזנה ידנית", enable: "הפעלה",
+    recoveryTitle: "קודי שחזור", recoveryIntro: "שמרו את הקודים במקום בטוח. כל קוד טוב לשימוש חד-פעמי, והם לא יוצגו שוב.",
+    recoverySaved: "שמרתי את הקודים", continue: "המשך",
+    inviteTitle: "קביעת סיסמה", inviteIntro: "קיבלתם הזמנה למערכת. בחרו סיסמה (12 תווים לפחות).", inviteInvalid: "ההזמנה לא תקפה או שפג תוקפה. בקשו ממנהל המערכת הזמנה חדשה.",
+    inviteWeak: "הסיסמה חלשה מדי או שהיא מכילה את שם האימייל.", setPassword: "קביעת סיסמה",
+    idleLogout: "יצאתם מהמערכת עקב חוסר פעילות.",
+  },
+  severity: { low: "נמוכה", medium: "בינונית", high: "גבוהה" },
+  kind: {
+    uniform: "מדים", equipment: "ציוד", classified_document: "מסמך מסווג", screen_photo: "צילום מסך",
+    codename: "שם קוד", location: "מיקום", text_pattern: "סימון סיווג בטקסט",
+  },
+  status: { new: "חדש", in_review: "בבדיקה", confirmed: "אושר", dismissed: "נדחה", escalated: "הועבר לטיפול" },
+  platform: { instagram: "אינסטגרם", tiktok: "טיקטוק", facebook: "פייסבוק" },
+  role: { uploader: "מעלה קבצים", reviewer: "בודק", admin: "מנהל", auditor: "מבקר" },
+  source: { text: "טקסט הפוסט", ocr: "טקסט שחולץ מתמונה", exif: "נתוני מיקום בקובץ", image: "ניתוח תמונה" },
+  dashboard: {
+    title: "לוח בקרה", openFindings: "התראות פתוחות", high: "חומרה גבוהה", accounts: "חשבונות במעקב",
+    openAccounts: "חשבונות פתוחים", closedAccounts: "חשבונות סגורים", decided: "הוחלט",
+    lastImport: "ייבוא אחרון", byKind: "התראות פתוחות לפי סוג", toQueue: "מעבר לתור ההתראות",
+    note: "כל התראה היא רמז לבודק אנושי בלבד. המערכת אינה מחליטה דבר על אדם.",
+  },
+  findings: {
+    title: "התראות", empty: "אין התראות בסינון הזה.", score: "ציון", open: "פתיחה", severity: "חומרה", type: "סוג",
+    platform: "רשת", account: "חשבון", filters: "סינון", statusTab: "מצב",
+    detailTitle: "פרטי התראה", reason: "הסיבה", evidence: "ראיה", source: "מקור הזיהוי", postText: "טקסט הפוסט",
+    noText: "לא היה טקסט בפוסט.", images: "תמונות", showImage: "הצגת התמונה", hideImage: "הסתרת התמונה",
+    imageHidden: "התמונה מוסתרת. הצפייה נרשמת ביומן הביקורת.", imageFailed: "לא ניתן לטעון את התמונה.",
+    postLink: "קישור לפוסט", history: "היסטוריית החלטות", noHistory: "טרם התקבלה החלטה.",
+    decide: "החלטה", confirm: "אישור – ממצא אמיתי", dismiss: "דחייה – התראת שווא", escalate: "העברה לטיפול גורם בכיר",
+    noteLabel: "הערה (לא חובה)", reasonLabel: "סיבת הדחייה", saved: "ההחלטה נשמרה.", engine: "גרסת מנוע",
+    lowConfidence: "אינדיקציה חלשה – נדרשת בדיקה אנושית בלבד.", back: "חזרה לרשימה", next: "להתראה הבאה",
+    humanOnly: "ההחלטה היא שלכם. המערכת רק מציעה.",
+  },
+  dismissReason: { not_relevant: "לא רלוונטי", common_word: "מילה רגילה, לא שם קוד", public_info: "מידע פומבי ידוע", other: "אחר" },
+  decision: { confirmed: "אושר", dismissed: "נדחה", escalated: "הועבר" },
+  people: {
+    title: "חיילים וחשבונות", name: "שם", unit: "יחידה", accounts: "חשבונות", consents: "הסכמות", empty: "אין חיילים במערכת.",
+    revoke: "ביטול הסכמה", revokeTitle: "ביטול הסכמה", revokeWarn: "ביטול ההסכמה יפסיק את הניטור וימחק את החשבונות ואת כל התוכן שנאסף מהם. הפעולה אינה הפיכה.",
+    erase: "מחיקת חייל", eraseTitle: "מחיקת חייל מהמערכת", eraseWarn: "כל המידע על החייל יימחק לצמיתות, כולל חשבונות, תוכן והתראות.",
+    consentStatus: { active: "בתוקף", revoked: "בוטלה", expired: "פגה" }, until: "עד", revoked: "ההסכמה בוטלה.", erased: "החייל נמחק.",
+  },
+  imports: {
+    title: "ייבוא קבצים", roster: "קובץ חיילים וחשבונות", chooseFile: "בחירת קובץ Excel", preview: "תצוגה מקדימה",
+    previewHint: "התצוגה המקדימה מריצה את הייבוא ומבטלת אותו: שום דבר לא נשמר עד לאישור.",
+    commit: "אישור וייבוא", previewResult: "תוצאת תצוגה מקדימה", done: "הייבוא הושלם.",
+    rows: "שורות בקובץ", soldiersCreated: "חיילים חדשים", accountsCreated: "חשבונות חדשים", accountsUpdated: "חשבונות שעודכנו",
+    unchanged: "ללא שינוי", rejected: "שורות שנדחו", rejectedLines: "שורות", duplicateFile: "קובץ זהה כבר יובא בעבר.",
+    phones: (n: string) => `זוהו ${n} עמודות טלפון. הן לא נקראות ולא נשמרות.`, history: "ייבוא קודם", file: "קובץ", at: "מועד",
+    errors: {
+      not_xlsx: "הקובץ אינו קובץ Excel תקין.", file_too_large: "הקובץ גדול מדי.", macros_not_allowed: "קבצים עם מאקרו אינם נתמכים.",
+      external_links_not_allowed: "קבצים עם קישורים חיצוניים אינם נתמכים.", unreadable: "לא ניתן לקרוא את הקובץ.",
+      empty: "הקובץ ריק.", too_many_rows: "יותר מדי שורות בקובץ.", missing_columns: "חסרות עמודות חובה בקובץ.",
+    } as Record<string, string>,
+    reasons: {
+      bad_identity: "מספר אישי או שם חסרים או לא תקינים", platform_not_allowed: "רשת לא נתמכת (נתמכות: אינסטגרם, טיקטוק, פייסבוק)",
+      bad_account: "שם חשבון לא תקין", bad_status: "סטטוס לא מוכר", no_consent: "אין אסמכתת הסכמה",
+      bad_consent_dates: "תאריכי הסכמה לא תקינים", consent_not_in_force: "ההסכמה אינה בתוקף היום",
+      consent_revoked: "ההסכמה בוטלה", account_belongs_to_other_soldier: "החשבון שייך לחייל אחר",
+    } as Record<string, string>,
+  },
+  watchlist: {
+    title: "רשימת מעקב", term: "מונח", aliases: "כינויים", kind: "סוג", severity: "חומרה", active: "פעיל", empty: "הרשימה ריקה.",
+    import: "ייבוא רשימת מונחים", importHint: "עמודות: מונח, כינויים, סוג, חומרה.", imported: (c: string, u: string) => `נוספו ${c}, עודכנו ${u}.`,
+    kinds: { codename: "שם קוד", site: "אתר", unit: "יחידה", other: "אחר" } as Record<string, string>,
+    deleteTitle: "מחיקת מונח", deleteWarn: "המונח יימחק מהרשימה.",
+  },
+  users: {
+    title: "משתמשים", create: "משתמש חדש", email: "אימייל", name: "שם תצוגה", role: "תפקיד", active: "פעיל", lastLogin: "כניסה אחרונה",
+    inviteTitle: "קישור הזמנה", inviteHint: "הקישור מוצג פעם אחת בלבד ותקף ל-72 שעות. מסרו אותו למשתמש בערוץ מאובטח.",
+    resetTitle: "קישור איפוס", reset: "איפוס פרטי כניסה", resetWarn: "הסיסמה והאימות הדו-שלבי יימחקו, וכל המכשירים יתנתקו. המשתמש יקבל קישור חדש.",
+    deactivate: "השבתה", activate: "הפעלה", twoFactor: "אימות דו-שלבי", twoFactorOn: "פעיל", twoFactorOff: "לא הוגדר",
+    conflict: "הפעולה לא אפשרית: אי אפשר להוריד או להשבית את עצמכם או את המנהל האחרון.", exists: "משתמש עם האימייל הזה כבר קיים.",
+  },
+  audit: {
+    title: "יומן ביקורת", action: "פעולה", user: "משתמש", object: "אובייקט", time: "זמן", ip: "כתובת", empty: "אין רשומות.",
+    hint: "היומן אינו מכיל תוכן, שמות או הערות. הוא נועד למעקב אחר מי עשה מה ומתי.",
+  },
+  account: {
+    title: "החשבון שלי", devices: "מכשירים מחוברים", device: "מכשיר", kind: "סוג", lastSeen: "פעילות אחרונה", current: "המכשיר הנוכחי",
+    revoke: "ניתוק", revoked: "מנותק", web: "דפדפן", android: "אנדרואיד", unnamed: "ללא שם",
+  },
+} as const;
+
+export type Kind = keyof typeof he.kind;

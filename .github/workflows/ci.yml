@@ -44,3 +44,55 @@ jobs:
       - run: black --check .
       - run: pytest -q
       - run: pip-audit -r requirements.txt
+
+  web:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: web
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - run: npm ci
+      - run: npm run check
+
+  e2e:
+    # Real API + PostgreSQL + built web app + Chromium: the whole reviewer workflow.
+    needs: [backend, web]
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: opsec_e2e
+          POSTGRES_USER: opsec
+          POSTGRES_PASSWORD: ci-password
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U opsec -d opsec_e2e"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
+    env:
+      TEST_PG_URL: postgresql+psycopg://opsec:ci-password@localhost:5432/opsec_e2e
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - run: pip install -r backend/requirements-dev.txt
+      - run: npm ci && npm run build && npx playwright-core install --with-deps chromium
+        working-directory: web
+      - run: bash e2e/run.sh
+        working-directory: web
+
