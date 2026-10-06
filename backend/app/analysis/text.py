@@ -46,14 +46,22 @@ def norm(text: str) -> str:
     return _NON_WORD.sub(" ", t).strip()
 
 
+def display(text: str) -> str:
+    """Same tokenisation as ``norm`` (so token i of both lines up) but final letters are kept:
+    this is what the reviewer reads."""
+    t = _QUOTES.sub("", _base_normalize(text))
+    return _NON_WORD.sub(" ", t).strip()
+
+
 _L = "0-9a-zA-Z\u05d0-\u05ea"
 _DOTTED = re.compile(rf"(?<![{_L}])(?:[{_L}][.\-_*·]){{2,}}[{_L}](?![{_L}])")
 _SPACED = re.compile(rf"(?<![{_L}])(?:[{_L}] ){{2,}}[{_L}](?![{_L}])")
 
 
 def deobfuscate(text: str) -> str:
-    """Join single letters split by dots/dashes ("נ.ש.ר") or by single spaces ("נ ש ר")."""
-    t = _base_normalize(text).translate(_FINALS)
+    """Join single letters split by dots/dashes ("נ.ש.ר") or by single spaces ("נ ש ר").
+    Final letters are left as written (callers normalise when they match)."""
+    t = _base_normalize(text)
     t = _DOTTED.sub(lambda m: re.sub(r"[.\-_*·]", "", m.group(0)), t)
     return _SPACED.sub(lambda m: m.group(0).replace(" ", ""), t)
 
@@ -152,15 +160,14 @@ _LOCATION_CONTEXT = {
 def match_terms(text: str, terms: list[TermSpec], source: str = "text") -> list[Hit]:
     if not text or not terms:
         return []
-    variants = [(norm(text), 0.0)]
+    variants = [(text, 0.0)]
     flat = deobfuscate(text)
-    if flat != _base_normalize(text).translate(_FINALS):
-        variants.append(
-            (norm(flat), 0.05)
-        )  # penalty: matched only after de-obfuscation
+    if flat != _base_normalize(text):
+        variants.append((flat, 0.05))  # penalty: matched only after de-obfuscation
     hits: dict[tuple[str, str], Hit] = {}
-    for body, penalty in variants:
-        tokens = body.split()
+    for source_text, penalty in variants:
+        shown = display(source_text).split()
+        tokens = norm(source_text).split()
         tokset = set(tokens)
         for t in terms:
             for form in (t.term, *t.aliases):
@@ -195,7 +202,7 @@ def match_terms(text: str, terms: list[TermSpec], source: str = "text") -> list[
                         score=score,
                         reason=f"הטקסט מכיל {label} מרשימת המעקב{how}",
                         source=source,
-                        snippet=_snippet(tokens, start, end),
+                        snippet=_snippet(shown, start, end),
                         term_id=t.id,
                         key=key,
                     )
@@ -248,8 +255,8 @@ _COORD = [
 def pattern_hits(text: str, source: str = "text") -> list[Hit]:
     if not text:
         return []
-    t = _base_normalize(text).translate(_FINALS)
-    t = _QUOTES.sub("", t)
+    shown = _QUOTES.sub("", _base_normalize(text))  # what the reviewer reads
+    t = shown.translate(_FINALS)  # what the patterns match (same length: char-for-char)
     out: list[Hit] = []
     for i, (rx, sev, score, label) in enumerate(_MARKERS):
         rx2 = rx.translate(_FINALS)  # final letters are unified in ``t`` as well
@@ -265,7 +272,7 @@ def pattern_hits(text: str, source: str = "text") -> list[Hit]:
                     score if source != "ocr" else min(0.95, score + 0.1),
                     f"{label} מופיע ב{'טקסט שחולץ מהתמונה' if source == 'ocr' else 'טקסט הפוסט'}",
                     source,
-                    _around(t, m),
+                    _around(shown, m),
                     None,
                     f"marker{i}",
                 )
@@ -280,7 +287,7 @@ def pattern_hits(text: str, source: str = "text") -> list[Hit]:
                     0.8,
                     f"{label} ב{'תמונה' if source == 'ocr' else 'פוסט'}",
                     source,
-                    _around(t, m),
+                    _around(shown, m),
                     None,
                     f"coord{i}",
                 )

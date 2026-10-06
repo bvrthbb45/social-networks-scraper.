@@ -112,3 +112,16 @@ def test_deobfuscate_leaves_normal_text_alone():
 def test_analyze_text_combines_both():
     kinds = {h.kind for h in analyze_text("בבסיס צפוני סודי 32.0853, 34.7818", T)}
     assert {"location", "text_pattern"} <= kinds
+
+
+def test_snippets_show_the_original_spelling_not_the_matching_form():
+    spec = [TermSpec("t", "נשר שחור", (), "codename", "high")]
+    h = match_terms("שלום עולם, הגענו אל נשר שחור היום!", spec)[0]
+    assert (
+        "שלום" in h.snippet and "עולם" in h.snippet
+    )  # final letters kept (not "שלומ")
+    assert "שלומ" not in h.snippet
+    p = pattern_hits("שלום עולם מסמך סודי ביותר")[0]
+    assert "עולם" in p.snippet and "עולמ" not in p.snippet
+    o = match_terms("שלום נ.ש.ר ש.ח.ו.ר", spec)[0]
+    assert "שלום" in o.snippet  # also for the de-obfuscated reading
