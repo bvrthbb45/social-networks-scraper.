@@ -9,6 +9,7 @@ out="${1:-backups}"
 mkdir -p "$out"
 chmod 700 "$out"
 [ -r .backup-passphrase ] || { echo "missing .backup-passphrase (run scripts/gen-secrets.sh)" >&2; exit 1; }
+# shellcheck source=/dev/null
 set -a; . ./.env; set +a
 stamp="$(date -u +%Y%m%dT%H%M%SZ)"
 enc() { openssl enc -aes-256-cbc -pbkdf2 -iter 600000 -salt -pass file:.backup-passphrase; }
