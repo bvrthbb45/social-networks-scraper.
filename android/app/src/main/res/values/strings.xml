@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">מוניטור אבטחת מידע</string>
+    <string name="connect_title">חיבור לשרת היחידה</string>
+    <string name="connect_hint">כתובת השרת, למשל monitor.example.org</string>
+    <string name="connect_button">חיבור</string>
+    <string name="connect_help">הכתובת חייבת להיות מאובטחת (HTTPS). את הכתובת מקבלים ממנהל המערכת.</string>
+    <string name="error_invalid_address">הכתובת אינה תקינה. יש להזין כתובת HTTPS בלבד, בלי שם משתמש, נתיב או פרמטרים.</string>
+    <string name="lock_required_title">נדרשת נעילת מסך</string>
+    <string name="lock_required_body">מטעמי אבטחה האפליקציה פועלת רק במכשיר עם נעילת מסך (קוד, תבנית או ביומטרי). הגדירו נעילה והפעילו מחדש.</string>
+    <string name="unlock_title">נעילת האפליקציה</string>
+    <string name="unlock_description">אמתו את זהותכם כדי להמשיך</string>
+    <string name="load_failed">לא ניתן להגיע לשרת. בדקו את החיבור.</string>
+    <string name="retry">נסו שוב</string>
+    <string name="change_server">החלפת שרת</string>
+    <string name="blocked_navigation">הניווט נחסם: האפליקציה פועלת מול שרת היחידה בלבד.</string>
+    <string name="saved">הקובץ נשמר.</string>
+    <string name="save_failed">שמירת הקובץ נכשלה.</string>
+</resources>

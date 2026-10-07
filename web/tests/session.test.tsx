@@ -65,4 +65,19 @@ describe("login", () => {
     await screen.findByRole("heading", { name: he.auth.mfaTitle });
     expect(calls.find((c) => c.key === "POST /auth/login")!.body).toMatchObject({ email: "a@example.org", client: "web" });
   });
+
+  it("registers an android device when running inside the Android shell", async () => {
+    (window as unknown as { OpsecAndroid?: unknown }).OpsecAndroid = { saveFile: () => {} };
+    try {
+      const { calls } = mockApi({ ...signedOut, "POST /auth/login": () => ({ status: "mfa_required", token: "STEP" }) });
+      render(<MemoryRouter><AuthProvider><Gate /></AuthProvider></MemoryRouter>);
+      await userEvent.type(await screen.findByLabelText(he.auth.email), "a@example.org");
+      await userEvent.type(screen.getByLabelText(he.auth.password), "whatever-pass-1");
+      await userEvent.click(screen.getByRole("button", { name: he.auth.login }));
+      await screen.findByRole("heading", { name: he.auth.mfaTitle });
+      expect(calls.find((c) => c.key === "POST /auth/login")!.body).toMatchObject({ client: "android", device_name: he.auth.androidDevice });
+    } finally {
+      delete (window as unknown as { OpsecAndroid?: unknown }).OpsecAndroid;
+    }
+  });
 });
