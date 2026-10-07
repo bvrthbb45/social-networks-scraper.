@@ -112,3 +112,45 @@ jobs:
           gradle-version: "8.9"
       - run: gradle --no-daemon testDebugUnitTest assembleDebug lintDebug
         working-directory: android
+
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Shell scripts
+        run: shellcheck scripts/*.sh
+      - name: Generate secrets and a throw-away certificate
+        run: |
+          bash scripts/gen-secrets.sh
+          mkdir certs
+          openssl req -x509 -newkey rsa:2048 -nodes -days 1 -subj "/CN=localhost" \
+            -keyout certs/privkey.pem -out certs/fullchain.pem
+          chmod 644 certs/*.pem
+          echo "CERT_DIR=$PWD/certs" >> .env
+          echo "HTTP_PORT=8080" >> .env
+          echo "HTTPS_PORT=8443" >> .env
+      - name: Start the whole stack
+        run: docker compose --env-file .env up -d --build --wait --wait-timeout 300
+      - name: Web app, API and security headers behind the proxy
+        run: |
+          curl -ksf https://localhost:8443/api/health
+          curl -ksfI https://localhost:8443/ | grep -i "strict-transport-security"
+          curl -ksfI https://localhost:8443/ | grep -i "content-security-policy"
+          test "$(curl -s -o /dev/null -w '%{http_code}' http://localhost:8080/)" = 301
+          test "$(curl -ks -o /dev/null -w '%{http_code}' https://localhost:8443/docs)" = 200  # SPA fallback, not the API docs
+          test "$(curl -ks -o /dev/null -w '%{http_code}' https://localhost:8443/api/users)" = 401
+      - name: First administrator can be created
+        run: docker compose exec -T api python -m app.cli create-admin admin@example.org | tail -1 | grep -E '.{20,}'
+      - name: Daily job runs
+        run: docker compose run --rm --no-deps daily python -m app.cli daily
+      - name: Backup is encrypted and verifiable
+        run: |
+          bash scripts/backup.sh backups
+          ls backups
+          ( cd backups && sha256sum -c SHA256-*.txt )
+          ! grep -aq "PGDMP" backups/db-*.dump.enc
+      - name: Logs on failure
+        if: failure()
+        run: docker compose logs --no-color | tail -150
+      - run: docker compose down -v
+        if: always()
