@@ -52,3 +52,4 @@ android/local.properties
 # encrypted media volume (never commit)
 media/
 *.bin
+android/.gradle/

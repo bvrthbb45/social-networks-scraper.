@@ -15,7 +15,7 @@ export const he = {
     copied: "הועתק", yes: "כן", no: "לא", all: "הכול", never: "אף פעם", delete: "מחיקה", actions: "פעולות",
   },
   auth: {
-    loginTitle: "כניסה למערכת", email: "כתובת אימייל", password: "סיסמה", login: "כניסה",
+    loginTitle: "כניסה למערכת", androidDevice: "אפליקציית אנדרואיד", email: "כתובת אימייל", password: "סיסמה", login: "כניסה",
     invalidCredentials: "פרטי הכניסה שגויים, או שהחשבון נעול זמנית.", tooMany: "יותר מדי ניסיונות. נסו שוב בעוד דקה.",
     mfaTitle: "אימות דו-שלבי", mfaPrompt: "הזינו את הקוד בן 6 הספרות מאפליקציית האימות (למשל Google Authenticator).",
     code: "קוד אימות", recoveryCode: "קוד שחזור", verify: "אימות", useRecovery: "אין לי גישה לאפליקציה – שימוש בקוד שחזור",

@@ -4,6 +4,7 @@ import { ApiError, post } from "../../api/client";
 import type { Session, StepToken, TotpSetup } from "../../api/types";
 import { ErrorBox, Field } from "../../components/ui";
 import { he } from "../../i18n/he";
+import { androidBridge } from "../../lib/download";
 import { signInError, useSubmit } from "./useSubmit";
 
 export type Step =
@@ -21,7 +22,9 @@ export function CredentialsStep({ go }: { go: (s: Step) => void }) {
   const { busy, error, submit } = useSubmit(async () => {
     const reply = await post<StepToken>(
       "/auth/login",
-      { email, password, client: "web", device_name: navigator.userAgent.slice(0, 100) },
+      androidBridge()
+        ? { email, password, client: "android", device_name: he.auth.androidDevice }
+        : { email, password, client: "web", device_name: navigator.userAgent.slice(0, 100) },
       { anonymous: true },
     );
     go(next(reply));
