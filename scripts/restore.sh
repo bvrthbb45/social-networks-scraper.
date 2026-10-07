@@ -9,8 +9,10 @@ dir="${1:?backups directory}"; stamp="${2:?stamp, e.g. 20261007T030000Z}"
 echo "This REPLACES the current database and evidence files with the backup from $stamp."
 read -r -p 'Type RESTORE to continue: ' answer
 [ "$answer" = "RESTORE" ] || { echo "cancelled"; exit 1; }
+set -a
 # shellcheck source=/dev/null
-set -a; . ./.env; set +a
+. ./.env
+set +a
 dec() { openssl enc -d -aes-256-cbc -pbkdf2 -iter 600000 -pass file:.backup-passphrase; }
 
 docker compose stop api daily proxy
