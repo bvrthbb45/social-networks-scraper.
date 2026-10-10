@@ -53,3 +53,5 @@ android/local.properties
 media/
 *.bin
 android/.gradle/
+backups/
+.backup-passphrase

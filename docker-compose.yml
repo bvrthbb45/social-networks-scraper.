@@ -1,5 +1,11 @@
-# Network isolation: the database lives on an `internal` network that has NO route
-# to the outside. Only the API is attached to both networks and published (loopback only).
+# Production layout. Only the proxy is reachable from outside (HTTPS). The database is on an `internal`
+# network with no route out; the API and the daily job never publish a port.
+x-app: &app
+  build: ./backend
+  env_file: .env
+  security_opt: ["no-new-privileges:true"]
+  cap_drop: [ALL]
+
 services:
   db:
     image: postgres:16-alpine
@@ -19,37 +25,77 @@ services:
     networks: [data]
 
   migrate:
-    build: ./backend
+    <<: *app
     command: alembic upgrade head
-    env_file: .env
     depends_on:
       db:
         condition: service_healthy
-    security_opt: ["no-new-privileges:true"]
-    cap_drop: [ALL]
     networks: [data]
 
   api:
-    build: ./backend
+    <<: *app
     restart: unless-stopped
-    env_file: .env
+    # Trust X-Forwarded-For only from the proxy's network, so a client cannot pick its own address
+    # (it drives rate limiting, lockouts and the audit log).
+    environment:
+      FORWARDED_ALLOW_IPS: 172.29.0.0/24
     depends_on:
       migrate:
         condition: service_completed_successfully
+    volumes:
+      - media:/data/media
+    read_only: true
+    tmpfs: [/tmp]
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request as u; u.urlopen('http://127.0.0.1:8000/health', timeout=3)"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+    networks:
+      data: {}
+      edge: {}
+
+  # Retention, consent expiry, orphan-media sweep and analysis, once a day (03:00 UTC).
+  daily:
+    <<: *app
+    restart: unless-stopped
+    command: ["python", "-m", "app.scheduler", "3"]
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    volumes:
+      - media:/data/media
+    read_only: true
+    tmpfs: [/tmp]
+    networks: [data]
+
+  proxy:
+    build:
+      context: .
+      dockerfile: deploy/proxy/Dockerfile
+    restart: unless-stopped
+    depends_on:
+      api:
+        condition: service_healthy
     ports:
-      - "127.0.0.1:8000:8000"
+      - "${HTTP_PORT:-80}:8080"
+      - "${HTTPS_PORT:-443}:8443"
+    volumes:
+      - ${CERT_DIR:?set CERT_DIR to the folder holding fullchain.pem and privkey.pem}:/certs:ro
     read_only: true
     tmpfs: [/tmp]
     security_opt: ["no-new-privileges:true"]
     cap_drop: [ALL]
-    networks: [data, edge]
-
-  # Analysis workers (Loop 4) and the web app (Loop 5) are added in later loops.
+    networks: [edge]
 
 volumes:
   pgdata:
+  media:
 
 networks:
   data:
     internal: true   # no outbound connectivity
   edge:
+    ipam:
+      config:
+        - subnet: 172.29.0.0/24
